@@ -186,7 +186,7 @@ class AssignmentSubmission(db.Model, SerializerMixin):
     points_earned = db.Column(db.Integer)  # User-submittable attribute
     submitted = db.Column(db.Boolean, default=False)
     
-    # Foreign keys
+    # Foreign keyss
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=False)
     
