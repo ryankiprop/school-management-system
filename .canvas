@@ -1,0 +1,13 @@
+# .canvas
+columns:
+  - name: 📝 To Do
+    labels: ["todo", "backlog", "enhancement"]
+
+  - name: 🚧 In Progress
+    labels: ["in-progress", "working"]
+
+  - name: 🔍 Review
+    labels: ["review", "needs-review", "testing"]
+
+  - name: ✅ Done
+    labels: ["done", "completed", "finished"]
