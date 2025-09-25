@@ -28,10 +28,10 @@ db.init_app(app)
 
 api = Api(app)
 
-# Enhanced CORS configuration
+# Updated CORS configuration with your actual URLs
 CORS(app, 
      origins=[
-         "https://school-management-system-tau-five.vercel.app/",  
+         "https://school-management-system-tau-five.vercel.app", 
          "http://localhost:3000",
          "http://localhost:5173"
      ],
