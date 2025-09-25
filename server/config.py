@@ -33,7 +33,6 @@ CORS(app)
 
 # Import models and routes
 from models import Student, Teacher, Course, Enrollment, Assignment, AssignmentSubmission
-from app import *
 
 if __name__ == '__main__':
     app.run()
