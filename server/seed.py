@@ -15,6 +15,7 @@ fake = Faker()
 
 def clear_data():
     print("Clearing existing data...")
+    # Clear in correct order to avoid foreign key constraints
     AssignmentSubmission.query.delete()
     Assignment.query.delete()
     Enrollment.query.delete()
@@ -54,28 +55,37 @@ def create_teachers():
 
 def create_courses(teachers):
     print("Creating courses...")
+
+    # Prefixes must be 3–4 letters to pass validation
     courses_data = [
-        {'name': 'Algebra I', 'code': 'MATH101', 'credits': 4},
-        {'name': 'Biology', 'code': 'SCI101', 'credits': 4},
-        {'name': 'World History', 'code': 'HIST101', 'credits': 3},
-        {'name': 'English Literature', 'code': 'ENG101', 'credits': 3},
-        {'name': 'Art Fundamentals', 'code': 'ART101', 'credits': 2},
-        {'name': 'Physical Education', 'code': 'PE101', 'credits': 1},
-        {'name': 'Music Theory', 'code': 'MUS101', 'credits': 2}
+        {'name': 'Algebra I', 'prefix': 'MATH', 'credits': 4},
+        {'name': 'Biology', 'prefix': 'SCIE', 'credits': 4},
+        {'name': 'English Literature', 'prefix': 'ENGL', 'credits': 3},
+        {'name': 'World History', 'prefix': 'HIST', 'credits': 3},
+        {'name': 'Art Fundamentals', 'prefix': 'ARTS', 'credits': 2},
+        {'name': 'Physical Education', 'prefix': 'PHED', 'credits': 1},
+        {'name': 'Chemistry', 'prefix': 'CHEM', 'credits': 4},
+        {'name': 'Calculus', 'prefix': 'MATH', 'credits': 4},
     ]
 
     courses = []
     for i, course_data in enumerate(courses_data):
+        # Generate a valid number (3–4 digits)
+        number = randint(100, 499)  # ensures 3 digits
+        code = f"{course_data['prefix']}{number}"
+
         course = Course(
             name=course_data['name'],
-            code=course_data['code'],
+            course_code=code,
             credits=course_data['credits'],
             teacher_id=teachers[i % len(teachers)].id
         )
         courses.append(course)
         db.session.add(course)
+
     db.session.commit()
     return courses
+
 
 def create_enrollments(students, courses):
     print("Creating enrollments...")
@@ -89,9 +99,11 @@ def create_enrollments(students, courses):
                 enrollment = Enrollment(
                     student_id=student.id,
                     course_id=course.id,
-                    semester=rc(semesters
-                ))
-                db.session.commit()
+                    semester=rc(semesters)  # FIXED: Added closing parenthesis
+                )
+                student_courses.add(course)
+                db.session.add(enrollment)
+    db.session.commit()  # FIXED: Moved outside the inner loop
 
 def create_assignments(courses):
     print("Creating assignments...")
@@ -101,35 +113,36 @@ def create_assignments(courses):
             assignment = Assignment(
                 title=f"{course.name} Assignment {i+1}",
                 description=fake.paragraph(),
-                due_date=datetime.now() + timedelta(days=7, minutes=30),
+                due_date=datetime.now() + timedelta(days=randint(7, 30)),  # FIXED: Variable due dates
                 max_points=rc([100, 50, 75, 25]),
                 course_id=course.id
             )
             assignments.append(assignment)
             db.session.add(assignment)
-        db.session.commit()
+    db.session.commit()  # FIXED: Moved outside the inner loop
     return assignments
 
 def create_assignment_submissions(students, assignments):
     print("Creating assignment submissions...")
     for assignment in assignments:
+        # Get enrolled students for this assignment's course
         enrolled_students = [enrollment.student for enrollment in assignment.course.enrollments]
+        
+        if enrolled_students:  # FIXED: Check if there are enrolled students
+            for student in enrolled_students[:randint(3, len(enrolled_students))]:
+                submission = AssignmentSubmission(
+                    assignment_id=assignment.id,
+                    student_id=student.id,
+                    content=fake.paragraph() if randint(0, 1) else None,
+                    points_earned=randint(0, assignment.max_points) if randint(0, 1) else None,
+                    submitted=rc([True, False])
+                )
+                db.session.add(submission)
+    db.session.commit()  # FIXED: Moved outside the inner loop
 
-        for student in enrolled_students[:randint(3, len(enrolled_students))]:
-            submission = AssignmentSubmission(
-                assignment_id=assignment.id,
-                student_id=student.id,
-                content=fake.paragraph() if randint(0, 1) else None,
-                points_earned=randint(0, assignment.max_points) if randint(0, 1) else None,
-                submitted=rc([True, False])
-            )
-
-            db.session.add(submission)
-        db.session.commit()
-            
 if __name__ == '__main__':
-    fake = Faker()
     with app.app_context():
+        print("Starting database seeding...")
         clear_data()
 
         teachers = create_teachers()
@@ -138,7 +151,6 @@ if __name__ == '__main__':
         create_enrollments(students, courses)
         assignments = create_assignments(courses)
         create_assignment_submissions(students, assignments)
+        
         print("Database seeded successfully!")
-        print(f"Created {len(teachers)} teachers, {len(students)} students, {len(courses)} courses")
-        print("Starting seed...")
-        # Seed code goes here!
+        print(f"Created: {len(teachers)} teachers, {len(students)} students, {len(courses)} courses")

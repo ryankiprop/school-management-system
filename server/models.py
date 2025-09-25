@@ -1,10 +1,10 @@
 from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import validates, object_session
 import re
 
-from config import db, bcrypt
+from config import db
+
 
 class Student(db.Model, SerializerMixin):
     __tablename__ = 'students'
@@ -19,13 +19,11 @@ class Student(db.Model, SerializerMixin):
     # One-to-many relationship: Student has many Enrollments
     enrollments = db.relationship('Enrollment', back_populates='student', cascade='all, delete-orphan')
     
-    # Many-to-many relationship with Courses through Enrollments
-    courses = association_proxy('enrollments', 'course')
-    
     # One-to-many relationship: Student has many AssignmentSubmissions
     assignment_submissions = db.relationship('AssignmentSubmission', back_populates='student', cascade='all, delete-orphan')
     
-    serialize_rules = ('-enrollments.student', '-assignment_submissions.student', '-courses.students')
+    # SIMPLIFIED serialization rules
+    serialize_rules = ('-enrollments', '-assignment_submissions')
     
     @validates('name')
     def validate_name(self, key, name):
@@ -45,6 +43,7 @@ class Student(db.Model, SerializerMixin):
             raise ValueError("Grade level must be between 1 and 12")
         return grade_level
 
+
 class Teacher(db.Model, SerializerMixin):
     __tablename__ = 'teachers'
     
@@ -58,7 +57,7 @@ class Teacher(db.Model, SerializerMixin):
     # One-to-many relationship: Teacher has many Courses
     courses = db.relationship('Course', back_populates='teacher', cascade='all, delete-orphan')
     
-    serialize_rules = ('-courses.teacher',)
+    serialize_rules = ('-courses',)
     
     @validates('name')
     def validate_name(self, key, name):
@@ -79,6 +78,7 @@ class Teacher(db.Model, SerializerMixin):
             raise ValueError(f"Department must be one of: {', '.join(valid_departments)}")
         return department
 
+
 class Course(db.Model, SerializerMixin):
     __tablename__ = 'courses'
     
@@ -97,10 +97,8 @@ class Course(db.Model, SerializerMixin):
     enrollments = db.relationship('Enrollment', back_populates='course', cascade='all, delete-orphan')
     assignments = db.relationship('Assignment', back_populates='course', cascade='all, delete-orphan')
     
-    # Many-to-many relationship with Students through Enrollments
-    students = association_proxy('enrollments', 'student')
-    
-    serialize_rules = ('-teacher.courses', '-enrollments.course', '-assignments.course', '-students.courses')
+    # SIMPLIFIED serialization rules
+    serialize_rules = ('-enrollments', '-assignments')
     
     @validates('name')
     def validate_name(self, key, name):
@@ -110,9 +108,11 @@ class Course(db.Model, SerializerMixin):
     
     @validates('course_code')
     def validate_course_code(self, key, course_code):
-        if not re.match(r'^[A-Z]{3,4}\d{3,4}$', course_code):
+        # Convert to uppercase first, then validate
+        course_code_upper = course_code.upper()
+        if not re.match(r'^[A-Z]{3,4}\d{3,4}$', course_code_upper):
             raise ValueError("Course code must be 3-4 letters followed by 3-4 numbers (e.g., MATH101)")
-        return course_code.upper()
+        return course_code_upper
     
     @validates('credits')
     def validate_credits(self, key, credits):
@@ -120,7 +120,7 @@ class Course(db.Model, SerializerMixin):
             raise ValueError("Credits must be between 1 and 5")
         return credits
 
-# Many-to-many relationship model with user-submittable attribute
+
 class Enrollment(db.Model, SerializerMixin):
     __tablename__ = 'enrollments'
     
@@ -136,7 +136,7 @@ class Enrollment(db.Model, SerializerMixin):
     student = db.relationship('Student', back_populates='enrollments')
     course = db.relationship('Course', back_populates='enrollments')
     
-    serialize_rules = ('-student.enrollments', '-course.enrollments')
+    serialize_rules = ('-student', '-course')
     
     @validates('semester')
     def validate_semester(self, key, semester):
@@ -144,6 +144,7 @@ class Enrollment(db.Model, SerializerMixin):
         if semester not in valid_semesters:
             raise ValueError(f"Semester must be one of: {', '.join(valid_semesters)}")
         return semester
+
 
 class Assignment(db.Model, SerializerMixin):
     __tablename__ = 'assignments'
@@ -163,7 +164,7 @@ class Assignment(db.Model, SerializerMixin):
     course = db.relationship('Course', back_populates='assignments')
     submissions = db.relationship('AssignmentSubmission', back_populates='assignment', cascade='all, delete-orphan')
     
-    serialize_rules = ('-course.assignments', '-submissions.assignment')
+    serialize_rules = ('-submissions',)
     
     @validates('title')
     def validate_title(self, key, title):
@@ -177,6 +178,7 @@ class Assignment(db.Model, SerializerMixin):
             raise ValueError("Max points must be between 1 and 1000")
         return max_points
 
+
 class AssignmentSubmission(db.Model, SerializerMixin):
     __tablename__ = 'assignment_submissions'
     
@@ -186,7 +188,7 @@ class AssignmentSubmission(db.Model, SerializerMixin):
     points_earned = db.Column(db.Integer)  # User-submittable attribute
     submitted = db.Column(db.Boolean, default=False)
     
-    # Foreign keyss
+    # Foreign keys
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
     assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=False)
     
@@ -194,14 +196,16 @@ class AssignmentSubmission(db.Model, SerializerMixin):
     student = db.relationship('Student', back_populates='assignment_submissions')
     assignment = db.relationship('Assignment', back_populates='submissions')
     
-    serialize_rules = ('-student.assignment_submissions', '-assignment.submissions')
+    serialize_rules = ('-student', '-assignment')
     
     @validates('points_earned')
     def validate_points_earned(self, key, points_earned):
         if points_earned is not None:
             if not isinstance(points_earned, int) or points_earned < 0:
                 raise ValueError("Points earned must be a non-negative integer")
-            if points_earned > self.assignment.max_points:
+            
+            # Only check if assignment is loaded
+            if self.assignment and points_earned > self.assignment.max_points:
                 raise ValueError("Points earned cannot exceed assignment max points")
         return points_earned
     

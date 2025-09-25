@@ -1,9 +1,6 @@
-<<<<<<< HEAD
-=======
 # Standard library imports
 import os
 # Remote library imports
->>>>>>> a8134ca568b5ac052cea1e15238c166b2b5ea657
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate

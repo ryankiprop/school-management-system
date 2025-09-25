@@ -5,7 +5,7 @@
 # Remote library imports
 from flask import request,make_response, session
 from flask_restful import Resource
-from flask_sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError
 
 # Local imports
 from config import app, db, api
@@ -123,7 +123,7 @@ class Enrollments(Resource):
             enrollment = Enrollment(
                 student_id=data['student_id'],
                 course_id=data['course_id'],
-                semester=data('semester')
+                semester=data['semester']  # FIXED: data['semester'] instead of data('semester')
             )
             db.session.add(enrollment)
             db.session.commit()
@@ -165,7 +165,7 @@ class AssignmentSubmissions(Resource):
             submission = AssignmentSubmission(
                 assignment_id=data['assignment_id'],
                 student_id=data['student_id'],
-                points_earned=data.get['points_earned'],
+                points_earned=data.get('points_earned'),  # FIXED: data.get() instead of data.get[]
                 content=data.get('content'),
                 submitted=data.get('submitted', False),
             )
@@ -181,10 +181,8 @@ api.add_resource(Teachers, "/teachers")
 api.add_resource(Courses, "/courses")
 api.add_resource(Enrollments, "/enrollments")
 api.add_resource(Assignments, "/assignments")
-api.add_resource(AssignmentSubmission, "/assignment_submisson") 
-                            
+api.add_resource(AssignmentSubmissions, "/assignment_submissions")  # FIXED: AssignmentSubmissions and correct spelling
 
 
 if __name__ == '__main__':
-    app.run(port=5555, debug=True)
-
+    app.run(host='0.0.0.0', port=5555, debug=True)
