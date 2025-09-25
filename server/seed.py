@@ -86,7 +86,6 @@ def create_courses(teachers):
     db.session.commit()
     return courses
 
-
 def create_enrollments(students, courses):
     print("Creating enrollments...")
     semesters = ['Fall', 'Spring', 'Summer']
@@ -128,8 +127,11 @@ def create_assignment_submissions(students, assignments):
         # Get enrolled students for this assignment's course
         enrolled_students = [enrollment.student for enrollment in assignment.course.enrollments]
         
-        if enrolled_students:  # FIXED: Check if there are enrolled students
-            for student in enrolled_students[:randint(3, len(enrolled_students))]:
+        if enrolled_students:  # Check if there are enrolled students
+            # Create submissions for 1 to all enrolled students
+            num_submissions = randint(1, len(enrolled_students))
+            
+            for student in enrolled_students[:num_submissions]:
                 submission = AssignmentSubmission(
                     assignment_id=assignment.id,
                     student_id=student.id,
@@ -138,7 +140,7 @@ def create_assignment_submissions(students, assignments):
                     submitted=rc([True, False])
                 )
                 db.session.add(submission)
-    db.session.commit()  # FIXED: Moved outside the inner loop
+    db.session.commit()
 
 if __name__ == '__main__':
     with app.app_context():
