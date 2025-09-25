@@ -11,7 +11,7 @@ const studentValidationSchema = yup.object({
 function StudentList() {
   const [students, setStudents] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5555';
+  const apiUrl = process.env.REACT_APP_API_URL || 'https://school-management-system-6ab5.onrender.com';
 
   useEffect(() => {
     fetchStudents();
