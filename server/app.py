@@ -174,6 +174,18 @@ class AssignmentSubmissions(Resource):
             return make_response(submission.to_dict(), 201)
         except ValueError as e:
             return make_response({'error': str(e)}, 400) 
+        
+@app.route('/api/health')
+def health_check():
+    return {'status': 'healthy', 'message': 'API is running'}
+
+@app.route('/api/test')
+def test_endpoint():
+    return {'message': 'Backend is working!', 'endpoints': {
+        'students': '/students',
+        'teachers': '/teachers',
+        'courses': '/courses'
+    }}        
 
 api.add_resource(Students, '/students')
 api.add_resource(StudentByID, '/students/<int:id>')       

@@ -28,11 +28,18 @@ db.init_app(app)
 
 api = Api(app)
 
-# Production CORS - update with your Vercel URL after deployment
-CORS(app)
+# Enhanced CORS configuration
+CORS(app, 
+     origins=[
+         "https://school-management-system-tau-five.vercel.app/",  
+         "http://localhost:3000",
+         "http://localhost:5173"
+     ],
+     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+     supports_credentials=True)
 
-# Import models and routes
-from models import Student, Teacher, Course, Enrollment, Assignment, AssignmentSubmission
+
 
 if __name__ == '__main__':
     app.run()
