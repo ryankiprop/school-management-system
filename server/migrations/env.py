@@ -63,7 +63,8 @@ def run_migrations_offline():
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = config.get_main_option("sqlite:///app.db")
+    SECRET_KEY = 'your_secret_key'
     context.configure(
         url=url, target_metadata=get_metadata(), literal_binds=True
     )
