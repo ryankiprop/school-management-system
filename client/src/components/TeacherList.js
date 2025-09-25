@@ -10,6 +10,7 @@ const teacherValidationSchema = yup.object({
 
 function TeacherList() {
   const [teachers, setTeachers] = useState([]);
+  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5555';
 
   useEffect(() => {
     fetchTeachers();
@@ -17,11 +18,13 @@ function TeacherList() {
 
   const fetchTeachers = async () => {
     try {
-      const response = await fetch('/teachers');
+      const response = await fetch(`${apiUrl}/teachers`);
+      if (!response.ok) throw new Error('Failed to fetch teachers');
       const data = await response.json();
       setTeachers(data);
     } catch (error) {
       console.error('Error fetching teachers:', error);
+      alert('Error loading teachers. Please check if the backend server is running.');
     }
   };
 
@@ -34,7 +37,7 @@ function TeacherList() {
     validationSchema: teacherValidationSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
-        const response = await fetch('/teachers', {
+        const response = await fetch(`${apiUrl}/teachers`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -46,12 +49,14 @@ function TeacherList() {
           const newTeacher = await response.json();
           setTeachers([...teachers, newTeacher]);
           resetForm();
+          alert('Teacher added successfully!');
         } else {
           const error = await response.json();
           alert(`Error: ${error.error}`);
         }
       } catch (error) {
         console.error('Error creating teacher:', error);
+        alert('Error creating teacher. Please check your connection.');
       }
     },
   });
@@ -74,6 +79,7 @@ function TeacherList() {
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               value={formik.values.name}
+              placeholder="Enter teacher name"
             />
             {formik.touched.name && formik.errors.name ? (
               <div className="error">{formik.errors.name}</div>
@@ -89,6 +95,7 @@ function TeacherList() {
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               value={formik.values.email}
+              placeholder="Enter email address"
             />
             {formik.touched.email && formik.errors.email ? (
               <div className="error">{formik.errors.email}</div>
@@ -123,14 +130,20 @@ function TeacherList() {
       </div>
 
       <div className="list-container">
-        {teachers.map(teacher => (
-          <div key={teacher.id} className="list-item">
-            <div>
-              <h3>{teacher.name}</h3>
-              <p>Email: {teacher.email} | Department: {teacher.department}</p>
-            </div>
+        {teachers.length === 0 ? (
+          <div className="list-item">
+            <p>No teachers found. Make sure the backend server is running.</p>
           </div>
-        ))}
+        ) : (
+          teachers.map(teacher => (
+            <div key={teacher.id} className="list-item">
+              <div>
+                <h3>{teacher.name}</h3>
+                <p>Email: {teacher.email} | Department: {teacher.department}</p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

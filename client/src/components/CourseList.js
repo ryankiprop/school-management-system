@@ -12,6 +12,7 @@ const courseValidationSchema = yup.object({
 function CourseList() {
   const [courses, setCourses] = useState([]);
   const [teachers, setTeachers] = useState([]);
+  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5555';
 
   useEffect(() => {
     fetchCourses();
@@ -20,17 +21,20 @@ function CourseList() {
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/courses');
+      const response = await fetch(`${apiUrl}/courses`);
+      if (!response.ok) throw new Error('Failed to fetch courses');
       const data = await response.json();
       setCourses(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
+      alert('Error loading courses. Please check if the backend server is running.');
     }
   };
 
   const fetchTeachers = async () => {
     try {
-      const response = await fetch('/teachers');
+      const response = await fetch(`${apiUrl}/teachers`);
+      if (!response.ok) throw new Error('Failed to fetch teachers');
       const data = await response.json();
       setTeachers(data);
     } catch (error) {
@@ -48,7 +52,7 @@ function CourseList() {
     validationSchema: courseValidationSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
-        const response = await fetch('/courses', {
+        const response = await fetch(`${apiUrl}/courses`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -64,12 +68,14 @@ function CourseList() {
           const newCourse = await response.json();
           setCourses([...courses, newCourse]);
           resetForm();
+          alert('Course added successfully!');
         } else {
           const error = await response.json();
           alert(`Error: ${error.error}`);
         }
       } catch (error) {
         console.error('Error creating course:', error);
+        alert('Error creating course. Please check your connection.');
       }
     },
   });
@@ -92,6 +98,7 @@ function CourseList() {
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               value={formik.values.name}
+              placeholder="Enter course name"
             />
             {formik.touched.name && formik.errors.name ? (
               <div className="error">{formik.errors.name}</div>
@@ -125,6 +132,7 @@ function CourseList() {
               value={formik.values.credits}
               min="1"
               max="5"
+              placeholder="1-5"
             />
             {formik.touched.credits && formik.errors.credits ? (
               <div className="error">{formik.errors.credits}</div>
@@ -157,14 +165,20 @@ function CourseList() {
       </div>
 
       <div className="list-container">
-        {courses.map(course => (
-          <div key={course.id} className="list-item">
-            <div>
-              <h3>{course.name} ({course.course_code})</h3>
-              <p>Credits: {course.credits} | Teacher: {course.teacher?.name}</p>
-            </div>
+        {courses.length === 0 ? (
+          <div className="list-item">
+            <p>No courses found. Make sure the backend server is running.</p>
           </div>
-        ))}
+        ) : (
+          courses.map(course => (
+            <div key={course.id} className="list-item">
+              <div>
+                <h3>{course.name} ({course.course_code})</h3>
+                <p>Credits: {course.credits} | Teacher: {course.teacher?.name}</p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

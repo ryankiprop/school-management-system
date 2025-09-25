@@ -12,6 +12,7 @@ function EnrollmentForm() {
   const [students, setStudents] = useState([]);
   const [courses, setCourses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
+  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5555';
 
   useEffect(() => {
     fetchStudents();
@@ -21,17 +22,20 @@ function EnrollmentForm() {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('/students');
+      const response = await fetch(`${apiUrl}/students`);
+      if (!response.ok) throw new Error('Failed to fetch students');
       const data = await response.json();
       setStudents(data);
     } catch (error) {
       console.error('Error fetching students:', error);
+      alert('Error loading students. Please check if the backend server is running.');
     }
   };
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/courses');
+      const response = await fetch(`${apiUrl}/courses`);
+      if (!response.ok) throw new Error('Failed to fetch courses');
       const data = await response.json();
       setCourses(data);
     } catch (error) {
@@ -41,7 +45,8 @@ function EnrollmentForm() {
 
   const fetchEnrollments = async () => {
     try {
-      const response = await fetch('/enrollments');
+      const response = await fetch(`${apiUrl}/enrollments`);
+      if (!response.ok) throw new Error('Failed to fetch enrollments');
       const data = await response.json();
       setEnrollments(data);
     } catch (error) {
@@ -58,7 +63,7 @@ function EnrollmentForm() {
     validationSchema: enrollmentValidationSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
-        const response = await fetch('/enrollments', {
+        const response = await fetch(`${apiUrl}/enrollments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -81,6 +86,7 @@ function EnrollmentForm() {
         }
       } catch (error) {
         console.error('Error creating enrollment:', error);
+        alert('Error creating enrollment. Please check your connection.');
       }
     },
   });
@@ -161,14 +167,20 @@ function EnrollmentForm() {
 
       <div className="list-container">
         <h3 style={{ padding: '1.5rem', borderBottom: '1px solid #eee' }}>Current Enrollments</h3>
-        {enrollments.map(enrollment => (
-          <div key={enrollment.id} className="list-item">
-            <div>
-              <h3>{enrollment.student?.name} in {enrollment.course?.name}</h3>
-              <p>Semester: {enrollment.semester} | Enrollment Date: {new Date(enrollment.enrollment_date).toLocaleDateString()}</p>
-            </div>
+        {enrollments.length === 0 ? (
+          <div className="list-item">
+            <p>No enrollments found.</p>
           </div>
-        ))}
+        ) : (
+          enrollments.map(enrollment => (
+            <div key={enrollment.id} className="list-item">
+              <div>
+                <h3>{enrollment.student?.name} in {enrollment.course?.name}</h3>
+                <p>Semester: {enrollment.semester} | Enrollment Date: {new Date(enrollment.enrollment_date).toLocaleDateString()}</p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

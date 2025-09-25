@@ -13,6 +13,7 @@ const assignmentValidationSchema = yup.object({
 function AssignmentList() {
   const [assignments, setAssignments] = useState([]);
   const [courses, setCourses] = useState([]);
+  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5555';
 
   useEffect(() => {
     fetchAssignments();
@@ -21,17 +22,20 @@ function AssignmentList() {
 
   const fetchAssignments = async () => {
     try {
-      const response = await fetch('/assignments');
+      const response = await fetch(`${apiUrl}/assignments`);
+      if (!response.ok) throw new Error('Failed to fetch assignments');
       const data = await response.json();
       setAssignments(data);
     } catch (error) {
       console.error('Error fetching assignments:', error);
+      alert('Error loading assignments. Please check if the backend server is running.');
     }
   };
 
   const fetchCourses = async () => {
     try {
-      const response = await fetch('/courses');
+      const response = await fetch(`${apiUrl}/courses`);
+      if (!response.ok) throw new Error('Failed to fetch courses');
       const data = await response.json();
       setCourses(data);
     } catch (error) {
@@ -50,7 +54,7 @@ function AssignmentList() {
     validationSchema: assignmentValidationSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
-        const response = await fetch('/assignments', {
+        const response = await fetch(`${apiUrl}/assignments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -66,12 +70,14 @@ function AssignmentList() {
           const newAssignment = await response.json();
           setAssignments([...assignments, newAssignment]);
           resetForm();
+          alert('Assignment created successfully!');
         } else {
           const error = await response.json();
           alert(`Error: ${error.error}`);
         }
       } catch (error) {
         console.error('Error creating assignment:', error);
+        alert('Error creating assignment. Please check your connection.');
       }
     },
   });
@@ -94,6 +100,7 @@ function AssignmentList() {
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               value={formik.values.title}
+              placeholder="Enter assignment title"
             />
             {formik.touched.title && formik.errors.title ? (
               <div className="error">{formik.errors.title}</div>
@@ -109,6 +116,7 @@ function AssignmentList() {
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               value={formik.values.description}
+              placeholder="Enter assignment description (optional)"
             />
             {formik.touched.description && formik.errors.description ? (
               <div className="error">{formik.errors.description}</div>
@@ -141,6 +149,7 @@ function AssignmentList() {
               value={formik.values.max_points}
               min="1"
               max="1000"
+              placeholder="Enter maximum points"
             />
             {formik.touched.max_points && formik.errors.max_points ? (
               <div className="error">{formik.errors.max_points}</div>
@@ -173,15 +182,21 @@ function AssignmentList() {
       </div>
 
       <div className="list-container">
-        {assignments.map(assignment => (
-          <div key={assignment.id} className="list-item">
-            <div>
-              <h3>{assignment.title}</h3>
-              <p>Course: {assignment.course?.name} | Due: {new Date(assignment.due_date).toLocaleString()} | Max Points: {assignment.max_points}</p>
-              {assignment.description && <p>{assignment.description}</p>}
-            </div>
+        {assignments.length === 0 ? (
+          <div className="list-item">
+            <p>No assignments found. Make sure the backend server is running.</p>
           </div>
-        ))}
+        ) : (
+          assignments.map(assignment => (
+            <div key={assignment.id} className="list-item">
+              <div>
+                <h3>{assignment.title}</h3>
+                <p>Course: {assignment.course?.name} | Due: {new Date(assignment.due_date).toLocaleString()} | Max Points: {assignment.max_points}</p>
+                {assignment.description && <p>{assignment.description}</p>}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

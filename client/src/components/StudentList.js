@@ -11,6 +11,7 @@ const studentValidationSchema = yup.object({
 function StudentList() {
   const [students, setStudents] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5555';
 
   useEffect(() => {
     fetchStudents();
@@ -18,11 +19,13 @@ function StudentList() {
 
   const fetchStudents = async () => {
     try {
-      const response = await fetch('/students');
+      const response = await fetch(`${apiUrl}/students`);
+      if (!response.ok) throw new Error('Failed to fetch students');
       const data = await response.json();
       setStudents(data);
     } catch (error) {
       console.error('Error fetching students:', error);
+      alert('Error loading students. Please check if the backend server is running.');
     }
   };
 
@@ -35,7 +38,7 @@ function StudentList() {
     validationSchema: studentValidationSchema,
     onSubmit: async (values, { resetForm }) => {
       try {
-        const response = await fetch('/students', {
+        const response = await fetch(`${apiUrl}/students`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -48,12 +51,14 @@ function StudentList() {
           setStudents([...students, newStudent]);
           resetForm();
           setShowForm(false);
+          alert('Student added successfully!');
         } else {
           const error = await response.json();
           alert(`Error: ${error.error}`);
         }
       } catch (error) {
         console.error('Error creating student:', error);
+        alert('Error creating student. Please check your connection.');
       }
     },
   });
@@ -61,17 +66,19 @@ function StudentList() {
   const deleteStudent = async (id) => {
     if (window.confirm('Are you sure you want to delete this student?')) {
       try {
-        const response = await fetch(`/students/${id}`, {
+        const response = await fetch(`${apiUrl}/students/${id}`, {
           method: 'DELETE',
         });
 
         if (response.ok) {
           setStudents(students.filter(student => student.id !== id));
+          alert('Student deleted successfully!');
         } else {
           alert('Error deleting student');
         }
       } catch (error) {
         console.error('Error deleting student:', error);
+        alert('Error deleting student. Please check your connection.');
       }
     }
   };
@@ -98,6 +105,7 @@ function StudentList() {
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 value={formik.values.name}
+                placeholder="Enter student name"
               />
               {formik.touched.name && formik.errors.name ? (
                 <div className="error">{formik.errors.name}</div>
@@ -113,6 +121,7 @@ function StudentList() {
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 value={formik.values.email}
+                placeholder="Enter email address"
               />
               {formik.touched.email && formik.errors.email ? (
                 <div className="error">{formik.errors.email}</div>
@@ -130,6 +139,7 @@ function StudentList() {
                 value={formik.values.grade_level}
                 min="1"
                 max="12"
+                placeholder="Enter grade (1-12)"
               />
               {formik.touched.grade_level && formik.errors.grade_level ? (
                 <div className="error">{formik.errors.grade_level}</div>
@@ -142,22 +152,28 @@ function StudentList() {
       )}
 
       <div className="list-container">
-        {students.map(student => (
-          <div key={student.id} className="list-item">
-            <div>
-              <h3>{student.name}</h3>
-              <p>Email: {student.email} | Grade: {student.grade_level}</p>
-            </div>
-            <div className="actions">
-              <button 
-                className="btn btn-danger" 
-                onClick={() => deleteStudent(student.id)}
-              >
-                Delete
-              </button>
-            </div>
+        {students.length === 0 ? (
+          <div className="list-item">
+            <p>No students found. Make sure the backend server is running.</p>
           </div>
-        ))}
+        ) : (
+          students.map(student => (
+            <div key={student.id} className="list-item">
+              <div>
+                <h3>{student.name}</h3>
+                <p>Email: {student.email} | Grade: {student.grade_level}</p>
+              </div>
+              <div className="actions">
+                <button 
+                  className="btn btn-danger" 
+                  onClick={() => deleteStudent(student.id)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
